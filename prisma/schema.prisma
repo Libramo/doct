@@ -1,0 +1,381 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  CLINIC
+  DOCTOR
+  PATIENT
+  NURSE
+  LAB_TECH
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum AuditSeverity {
+  INFO
+  WARN
+  ERROR
+  CRITICAL
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  PUSH
+  SMS
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  emailVerified Boolean @default(false)
+  name     String
+  role         Role @default(PATIENT)
+  image        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  deletedAt    DateTime?
+
+  // relations to role-specific profiles (1-1)
+  accounts        Account[]
+  sessions        Session[]
+  verifications   Verification[]
+  doctor       Doctor?
+  nurse        Nurse?
+  labTech      LabTech?
+  patient      Patient?
+  clinic       Clinic?   // for clinic-owner accounts
+  admin        Admin?
+
+  // common relations
+  organizationsOwned  Organization[]
+  messagesSent     Message[]   @relation("messagesSent")
+  messagesReceived Message[]   @relation("messagesReceived")
+  notifications    Notification[]
+  notificationPrefs NotificationPreference[]
+  auditLogs        AuditLog[]  @relation("auditByUser")
+
+  @@index([role])
+  @@index([deletedAt])
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token       String   @unique
+  expiresAt   DateTime
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Account {
+  id                      String   @id @default(cuid())
+  userId                  String
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId               String
+  providerId              String
+  accessToken             String?
+  refreshToken            String?
+  accessTokenExpiresAt    DateTime?
+  refreshTokenExpiresAt   DateTime?
+  scope                   String?
+  idToken                 String?
+  password                String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@unique([providerId, accountId])
+}
+
+model Verification {
+  id          String   @id @default(cuid())
+  identifier  String
+  value       String
+  expiresAt   DateTime
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  ownerUserId String?             // optional link to user who manages org
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  owner       User?    @relation( fields: [ownerUserId], references: [id], onDelete:SetNull)
+  clinics     Clinic[]
+
+  @@index([name])
+  @@index([ownerUserId])
+}
+
+model Clinic {
+  id             String   @id @default(cuid())
+  name           String
+  address        String?
+  phone          String?
+  verified       Boolean  @default(false)
+  userId         String?  @unique   // optional account representing clinic admin
+  organizationId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  user           User?     @relation(fields: [userId], references: [id])
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  doctors        Doctor[]
+  nurses         Nurse[]
+  labTechs       LabTech[]
+  appointments   Appointment[]
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([deletedAt])
+}
+
+model Admin {
+  id      String   @id @default(cuid())
+  userId  String   @unique
+  level   Int      @default(1)
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id])
+}
+
+model Doctor {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  clinicId       String?
+  specialty String?
+  bio            String?
+  verified       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  user           User     @relation(fields: [userId], references: [id])
+  clinic         Clinic?  @relation(fields: [clinicId], references: [id])
+  appointments   Appointment[]
+  availabilities Availability[]
+  records        MedicalRecord[]
+
+  @@index([clinicId])
+  @@index([verified])
+  @@index([deletedAt])
+}
+
+model Nurse {
+  id        String @id @default(cuid())
+  userId    String @unique
+  clinicId  String?
+  title     String?
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  user      User   @relation(fields: [userId], references: [id])
+  clinic    Clinic? @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId])
+  @@index([deletedAt])
+}
+
+model LabTech {
+  id             String @id @default(cuid())
+  userId         String @unique
+  clinicId       String?
+  labName        String?
+  qualifications String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  user           User   @relation(fields: [userId], references: [id])
+  clinic         Clinic? @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId])
+  @@index([deletedAt])
+}
+
+model Patient {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  dateOfBirth   DateTime?
+  gender        String?
+  phone         String?
+  address       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  user          User     @relation(fields: [userId], references: [id])
+  appointments  Appointment[]
+  records       MedicalRecord[]
+
+  @@index([deletedAt])
+}
+
+model Appointment {
+  id          String   @id @default(cuid())
+  doctorId    String
+  patientId   String
+  clinicId    String?
+  date        DateTime
+  status      AppointmentStatus @default(PENDING)
+  reason      String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  doctor      Doctor   @relation(fields: [doctorId], references: [id])
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  clinic      Clinic?  @relation(fields: [clinicId], references: [id])
+
+  @@index([doctorId, date])
+  @@index([patientId, status])
+  @@index([clinicId])
+  @@index([deletedAt])
+}
+
+model Availability {
+  id        String   @id @default(cuid())
+  doctorId  String
+  dayOfWeek Int      // 0-6
+  startTime DateTime
+  endTime   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  doctor    Doctor   @relation(fields: [doctorId], references: [id])
+
+  @@index([doctorId, dayOfWeek])
+  @@index([deletedAt])
+}
+
+model MedicalRecord {
+  id          String   @id @default(cuid())
+  patientId   String
+  doctorId    String?
+  description String
+  meta        Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  patient     Patient  @relation(fields: [patientId], references: [id])
+  doctor      Doctor?  @relation(fields: [doctorId], references: [id])
+
+  @@index([patientId])
+  @@index([deletedAt])
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  content     String
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  deletedAt   DateTime?
+
+  sender      User     @relation("messagesSent", fields: [senderId], references: [id])
+  receiver    User     @relation("messagesReceived", fields: [receiverId], references: [id])
+
+  @@index([senderId, receiverId, read])
+  @@index([deletedAt])
+}
+
+model Notification {
+  id             String   @id @default(cuid())
+  userId         String
+  title          String
+  body           String?
+  channel        NotificationChannel @default(IN_APP)
+  meta           Json?
+  deliveredAt    DateTime?
+  failedAt       DateTime?
+  attempts       Int      @default(0)
+  read           Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, read])
+  @@index([channel])
+  @@index([createdAt])
+}
+
+model NotificationPreference {
+  id        String @id @default(cuid())
+  userId    String
+  channel   NotificationChannel
+  enabled   Boolean @default(true)
+
+  user      User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, channel])
+  @@index([userId])
+}
+
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String?                     // actor
+  action       String
+  entity       String?
+  entityId     String?
+  before       Json?
+  after        Json?
+  ipAddress    String?
+  userAgent    String?
+  severity     AuditSeverity  @default(INFO)
+  createdAt    DateTime  @default(now())
+  deletedAt    DateTime?
+
+  user         User?    @relation("auditByUser", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+model RolePermission {
+  id        String @id @default(cuid())
+  role      Role
+  resource  String   // e.g., "Appointment", "MedicalRecord", "*"
+  action    String   // e.g., "create", "read", "update", "delete", "*"
+  createdAt DateTime @default(now())
+
+  @@unique([role, resource, action])
+  @@index([role])
+}
