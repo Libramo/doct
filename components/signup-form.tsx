@@ -36,7 +36,9 @@ export default function SignupForm() {
   async function onSubmit(formValues: z.infer<typeof SignUpSchema>) {
     // Do something with the form values.
     setLoading(true);
-    const { error } = await authClient.signUp.email(
+    console.log("Formvalues", formValues);
+
+    await authClient.signUp.email(
       {
         email: formValues.email, // user email address
         password: formValues.password, // user password -> min 8 characters by default
@@ -54,6 +56,7 @@ export default function SignupForm() {
         onError: (ctx) => {
           // display the error message
           alert(ctx.error.message);
+          alert("unable to sign-up");
         },
       }
     );

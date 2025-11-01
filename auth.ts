@@ -1,11 +1,13 @@
 import { betterAuth } from "better-auth";
-import prisma from "./lib/prisma";
-import { prismaAdapter } from "better-auth/adapters/prisma";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { customSession, username } from "better-auth/plugins";
+import { db, AllTables } from "./db";
 
 export const auth = betterAuth({
-  database: prismaAdapter(prisma, {
-    provider: "postgresql", // or "mysql", "postgresql", ...etc
+  database: drizzleAdapter(db, {
+    provider: "pg",
+    debugLogs: true,
+    // schema: AllTables,
   }),
 
   emailAndPassword: {
@@ -24,22 +26,22 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-    customSession(async ({ user, session }) => {
-      const dbUser = await prisma.user.findUnique({
-        where: { id: user.id },
-        select: { role: true },
-      });
-      return {
-        user: {
-          ...user,
-          role: dbUser?.role ?? "PATIENT",
-        },
-        session: {
-          ...session,
-          role: dbUser?.role ?? "PATIENT",
-        },
-      };
-    }),
+    // customSession(async ({ user, session }) => {
+    //   const dbUser = await db.user.findUnique({
+    //     where: { id: user.id },
+    //     select: { role: true },
+    //   });
+    //   return {
+    //     user: {
+    //       ...user,
+    //       role: dbUser?.role ?? "PATIENT",
+    //     },
+    //     session: {
+    //       ...session,
+    //       role: dbUser?.role ?? "PATIENT",
+    //     },
+    //   };
+    // }),
     username(),
   ],
 });

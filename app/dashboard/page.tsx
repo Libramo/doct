@@ -27,7 +27,7 @@ const DashboardPage = async () => {
         <SignOutBtn />
       </div>
 
-      <pre>{JSON.stringify(session.user, null, 3)}</pre>
+      <pre>{JSON.stringify(session.user, null, 2)}</pre>
     </div>
   );
 };

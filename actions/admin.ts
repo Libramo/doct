@@ -1,15 +1,11 @@
 "use server";
 
-import prisma from "@/lib/prisma";
+import { db } from "@/db";
+import { user } from "@/db/schema/user";
 
 export const getDoctors = async () => {
   try {
-    const doctors = await prisma.doctor.findMany({
-      include: {
-        clinic: true,
-        user: true,
-      },
-    });
+    const doctors = await db.select().from(user);
     return doctors;
   } catch (error) {
     console.log(error);
