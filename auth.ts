@@ -6,7 +6,7 @@ import { db, AllTables } from "./db";
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
-    debugLogs: true,
+    // debugLogs: true,
     // schema: AllTables,
   }),
 

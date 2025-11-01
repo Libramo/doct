@@ -2,7 +2,7 @@
 import { Input } from "@/components/ui/input";
 import { Controller, useForm } from "react-hook-form";
 import { LoginSchema, SignUpSchema } from "@/lib/validations";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { EyeIcon, EyeOffIcon, Loader } from "lucide-react";
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -13,16 +13,30 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
-import { Field, FieldError, FieldGroup, FieldLabel } from "./ui/field";
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "./ui/field";
 import { Button } from "./ui/button";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
-export default function LoginForm() {
+export default function LoginForm({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
   const [loading, setLoading] = useState<boolean>(false);
   const [isVisible, setIsVisible] = useState<boolean>(false);
   const toggleVisibility = () => setIsVisible((prevState) => !prevState);
 
+  const router = useRouter();
   const form = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
     mode: "onChange",
@@ -36,11 +50,11 @@ export default function LoginForm() {
     // Do something with the form values.
     setLoading(true);
     try {
-      const { error } = await authClient.signIn.email(
+      await authClient.signIn.email(
         {
           email: formValues.email,
           password: formValues.password,
-          callbackURL: "/dashboard",
+          // callbackURL: "/dashboard",
         },
 
         {
@@ -49,38 +63,39 @@ export default function LoginForm() {
           },
           onSuccess: (ctx) => {
             //redirect to the dashboard or sign in page
+            toast.success("Vous vous êtes connecté avec succès.");
+            router.push("/dashboard");
           },
           onError: (ctx) => {
             // display the error message
-            alert(ctx.error.message);
+            toast.error("An error where encountered");
           },
         }
       );
     } catch (err) {
       if (err instanceof Error) {
         console.error("Login failed:", err.message);
-        alert(err.message);
+        toast.error(err.message);
       } else {
         console.error("Unexpected error:", err);
-        alert("An unexpected error occurred");
+        toast.error("An unexpected error occurred");
       }
     } finally {
       setLoading(false);
     }
   }
-  return (
-    <div className="flex items-center justify-center h-screen">
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <Card className="w-auto">
-          <CardHeader>
-            <CardTitle>Se connecter</CardTitle>
-            <CardDescription>Veuillez saisir vos identifiants</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {/* ... */}
-            {/* Build the form here */}
-            {/* ... */}
 
+  return (
+    <div className={cn("flex flex-col gap-6", className)} {...props}>
+      <Card>
+        <CardHeader>
+          <CardTitle>Connectez-vous</CardTitle>
+          <CardDescription>
+            Saisissez votre email pour vous connecter
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
             <FieldGroup>
               <Controller
                 control={form.control}
@@ -91,11 +106,9 @@ export default function LoginForm() {
                     <Input
                       type="email"
                       {...field}
+                      placeholder="m@example.com"
                       aria-invalid={fieldState.invalid}
                     />
-                    {fieldState.invalid && (
-                      <FieldError errors={[fieldState.error]} />
-                    )}
                   </Field>
                 )}
               />
@@ -111,6 +124,7 @@ export default function LoginForm() {
                         type={isVisible ? "text" : "password"}
                         {...field}
                         aria-invalid={fieldState.invalid}
+                        placeholder="*********"
                       />
                       <button
                         className="absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-e-md text-muted-foreground/80 transition-[color,box-shadow] outline-none hover:text-foreground focus:z-10 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
@@ -136,25 +150,22 @@ export default function LoginForm() {
                   </Field>
                 )}
               />
+
+              <Field>
+                {loading ?? <Loader className="animate-spin" />}
+                <Button type="submit" disabled={loading}>
+                  {loading ? "Connexion..." : "Se connecter"}
+                </Button>
+
+                <FieldDescription className="text-center">
+                  Vous n'avez pas de compte ?{" "}
+                  <Link href="/sign-up">Créer un compte</Link>
+                </FieldDescription>
+              </Field>
             </FieldGroup>
-            {/* </form> */}
-          </CardContent>
-          <CardFooter>
-            <Field className="justify-center" orientation={"horizontal"}>
-              <Button
-                type="button"
-                variant={"outline"}
-                onClick={() => form.reset()}
-              >
-                Réinitialiser
-              </Button>
-              <Button disabled={loading} type="submit">
-                {loading ? "Connexion..." : " Se connecter"}
-              </Button>
-            </Field>
-          </CardFooter>
-        </Card>
-      </form>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

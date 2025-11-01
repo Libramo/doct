@@ -1,5 +1,6 @@
 // import { getDoctors } from "@/actions/admin";
 // import prisma from "@/lib/prisma";
+import Navbar from "@/components/navbar";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/utils";
 import Link from "next/link";
@@ -7,13 +8,12 @@ import Link from "next/link";
 export default async function Home() {
   const session = await getCurrentUser();
 
+  console.log(session);
+
   if (!session) {
     return (
-      <div className="flex w-2xl">
-        Not authenticated Please
-        <Button asChild variant={"outline"}>
-          <Link href={"/login"}>Se connecter</Link>
-        </Button>
+      <div>
+        <Navbar />
       </div>
     );
   }
