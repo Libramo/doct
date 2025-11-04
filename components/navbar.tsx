@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { NavigationSheet } from "@/components/navigation-sheet";
 import Link from "next/link";
+import ThemeToggleButton from "./theme-toggle";
 
 const Navbar = () => {
   return (
@@ -14,15 +15,17 @@ const Navbar = () => {
 
           <div className="flex items-center gap-3">
             <Button asChild variant="outline" className="hidden sm:inline-flex">
-              <Link href={"/login"}>Se connecter</Link>
+              <Link href={"/login"}>Portail patient</Link>
             </Button>
 
-            <Button variant={"link"}>
-              <Link href={"/login"}>Je suis praticien</Link>
+            <Button variant={"default"} className="hidden sm:inline-flex">
+              <Link href={"/login"}>Portail praticien</Link>
             </Button>
+            <ThemeToggleButton className="hidden md:block" />
 
             {/* Mobile Menu */}
-            <div className="md:hidden">
+            <div className="md:hidden flex space-x-2">
+              <ThemeToggleButton />
               <NavigationSheet />
             </div>
           </div>

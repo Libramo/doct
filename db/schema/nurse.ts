@@ -1,33 +1,31 @@
-import { index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { index, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { user } from "./user";
 import { clinic } from "./clinic";
 import { relations } from "drizzle-orm";
 
 // --- Nurse Profile ---
 export const nurse = pgTable(
-  "nurse",
+  "Nurse",
   {
-    id: text("id").notNull().primaryKey(),
-    userId: text("userId")
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
+    userId: uuid("user_id")
       .notNull()
       .unique()
       .references(() => user.id, { onDelete: "cascade" }),
-    clinicId: text("clinicId").references(() => clinic.id, {
+    clinicId: uuid("clinic_id").references(() => clinic.id, {
       onDelete: "set null",
     }),
     title: text("title"),
     bio: text("bio"),
-    createdAt: timestamp("createdAt", { withTimezone: true })
+    createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-    updatedAt: timestamp("updatedAt", { withTimezone: true })
+    updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => ({
-    clinicIdx: index("nurse_clinic_id_idx").on(table.clinicId),
-  })
+  (table) => [index("nurse_clinic_id_idx").on(table.clinicId)]
 );
 
 export const nursesRelations = relations(nurse, ({ one }) => ({

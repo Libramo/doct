@@ -68,7 +68,7 @@ export default function LoginForm({
           },
           onError: (ctx) => {
             // display the error message
-            toast.error("An error where encountered");
+            toast.error(ctx.error.message);
           },
         }
       );

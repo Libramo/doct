@@ -1,8 +1,8 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { user } from "./user";
 
-export const session = pgTable("session", {
-  id: text("id").primaryKey(),
+export const session = pgTable("Session", {
+  id: uuid("id").defaultRandom().notNull().primaryKey(),
   expiresAt: timestamp("expires_at").notNull(),
   token: text("token").notNull().unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -11,7 +11,7 @@ export const session = pgTable("session", {
     .notNull(),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
-  userId: text("user_id")
+  userId: uuid("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
 });

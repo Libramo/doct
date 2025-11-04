@@ -5,7 +5,7 @@ import { MoonIcon, SunIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
-const ThemeToggleButton = () => {
+const ThemeToggleButton = ({ className }: { className?: string }) => {
   const [mounted, setMounted] = useState(false);
   const { resolvedTheme, setTheme } = useTheme();
 
@@ -23,9 +23,16 @@ const ThemeToggleButton = () => {
   }
 
   return (
-    <Button size="icon" className="rounded-full" onClick={toggleTheme}>
-      {resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />}
-    </Button>
+    <div className={`${className}`}>
+      <Button
+        size="icon"
+        variant={"outline"}
+        className={`rounded-full`}
+        onClick={toggleTheme}
+      >
+        {resolvedTheme === "dark" ? <SunIcon /> : <MoonIcon />}
+      </Button>
+    </div>
   );
 };
 

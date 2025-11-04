@@ -1,7 +1,7 @@
 // "use server";
-import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { roleEnum } from "./enums";
-import { relations } from "drizzle-orm";
+import { InferSelectModel, relations } from "drizzle-orm";
 import { doctor } from "./doctor";
 import { nurse } from "./nurse";
 import { organization } from "./organization";
@@ -10,8 +10,8 @@ import { patient } from "./patient";
 import { clinic } from "./clinic";
 import { message } from "./message";
 
-export const user = pgTable("user", {
-  id: text("id").primaryKey(),
+export const user = pgTable("User", {
+  id: uuid("id").defaultRandom().notNull().primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
@@ -44,3 +44,5 @@ export const userRelations = relations(user, ({ one, many }) => ({
   messagesSent: many(message, { relationName: "messagesSent" }),
   messagesReceived: many(message, { relationName: "messagesReceived" }),
 }));
+
+export type UserType = InferSelectModel<typeof user>;

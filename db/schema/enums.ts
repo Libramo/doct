@@ -1,36 +1,31 @@
 // db/schema/enums.ts
+import { InferSelectModel } from "drizzle-orm";
 import { pgEnum } from "drizzle-orm/pg-core";
 
 // Translates Prisma 'enum Role'
-export const roleEnum = pgEnum("role", [
+export const roleEnumValues = [
   "ADMIN",
   "CLINIC",
   "DOCTOR",
   "PATIENT",
   "NURSE",
   "LAB_TECH",
-]);
+] as const;
 
-// Translates Prisma 'enum AppointmentStatus'
-export const appointmentStatusEnum = pgEnum("appointment_status", [
+export const appointmentStatusEnumValues = [
   "PENDING",
   "CONFIRMED",
   "CANCELLED",
   "COMPLETED",
-]);
+] as const;
 
-// // Translates Prisma 'enum AuditSeverity'
-// export const auditSeverityEnum = pgEnum('audit_severity', [
-//   'INFO',
-//   'WARN',
-//   'ERROR',
-//   'CRITICAL',
-// ]);
+// Translates Prisma 'enum AppointmentStatus'
+export const appointmentStatusEnum = pgEnum(
+  "appointment_status",
+  appointmentStatusEnumValues
+);
 
-// // Translates Prisma 'enum NotificationChannel'
-// export const notificationChannelEnum = pgEnum('notification_channel', [
-//   'IN_APP',
-//   'EMAIL',
-//   'PUSH',
-//   'SMS',
-// ]);
+export const roleEnum = pgEnum("Role", roleEnumValues);
+
+export type Role = (typeof roleEnumValues)[number];
+export type AppointmentStatus = (typeof appointmentStatusEnumValues)[number];

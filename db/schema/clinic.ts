@@ -1,4 +1,11 @@
-import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  index,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { user } from "./user";
 import { organization } from "./organization";
 import { relations } from "drizzle-orm";
@@ -9,35 +16,34 @@ import { appointment } from "./appointment";
 
 // --- Clinic ---
 export const clinic = pgTable(
-  "clinic",
+  "Clinic",
   {
-    id: text("id").primaryKey(),
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
     name: text("name").notNull(),
     address: text("address"),
     phone: text("phone"),
     verified: boolean("verified").default(false).notNull(),
+
     // A clinic can be managed by a user account
-    userId: text("userId")
+    userId: uuid("user_id")
       .unique()
       .references(() => user.id, { onDelete: "set null" }),
-    organizationId: text("organizationId").references(() => organization.id, {
+    organizationId: uuid("organization_id").references(() => organization.id, {
       onDelete: "cascade",
     }),
-    createdAt: timestamp("createdAt", { withTimezone: true })
+    createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-    updatedAt: timestamp("updatedAt", { withTimezone: true })
+    updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
-    deletedAt: timestamp("deletedAt", { withTimezone: true }),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },
-  (table) => ({
-    organizationIdx: index("clinic_organization_id_idx").on(
-      table.organizationId
-    ),
-    userIdx: index("clinic_user_id_idx").on(table.userId),
-  })
+  (table) => [
+    index("clinic_organization_id_idx").on(table.organizationId),
+    index("clinic_user_id_idx").on(table.userId),
+  ]
 );
 
 export const clinicsRelations = relations(clinic, ({ one, many }) => ({

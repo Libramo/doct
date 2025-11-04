@@ -1,7 +1,14 @@
-import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  index,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { user } from "./user";
 import { clinic } from "./clinic";
-import { relations } from "drizzle-orm";
+import { InferSelectModel, relations } from "drizzle-orm";
 import { appointment } from "./appointment";
 import { availability } from "./availability";
 import { medicalRecord } from "./medicalRecord";
@@ -10,29 +17,27 @@ import { medicalRecord } from "./medicalRecord";
 export const doctor = pgTable(
   "Doctor",
   {
-    id: text("id").primaryKey(),
+    id: uuid("id").defaultRandom().notNull().primaryKey(),
     // 1-to-1 link to the auth user table.
-    userId: text("userId")
+    userId: uuid("user_id")
       .notNull()
       .unique()
       .references(() => user.id, { onDelete: "cascade" }),
-    clinicId: text("clinicId").references(() => clinic.id, {
+    clinicId: uuid("clinic_id").references(() => clinic.id, {
       onDelete: "set null",
     }),
     specialty: text("specialty"),
     bio: text("bio"),
     verified: boolean("verified").default(false).notNull(),
-    createdAt: timestamp("createdAt", { withTimezone: true })
+    createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
-    updatedAt: timestamp("updatedAt", { withTimezone: true })
+    updatedAt: timestamp("updated_at", { withTimezone: true })
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
   },
-  (table) => ({
-    clinicIdx: index("doctor_clinic_id_idx").on(table.clinicId),
-  })
+  (table) => [index("doctor_clinic_id_idx").on(table.clinicId)]
 );
 
 export const doctorsRelations = relations(doctor, ({ one, many }) => ({
@@ -45,3 +50,5 @@ export const doctorsRelations = relations(doctor, ({ one, many }) => ({
   availabilities: many(availability),
   records: many(medicalRecord),
 }));
+
+export type DoctorType = InferSelectModel<typeof doctor>;
